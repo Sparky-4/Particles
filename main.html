@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<link href='https://fonts.googleapis.com/css?family=Electrolize' rel='stylesheet'>
+	<style>
+		body {
+			overflow: hidden;
+			margin: 0px;
+		}
+	</style>
+
+</head>
+<body onLoad = requestAnimationFrame(update)>
+	<canvas id="myCanvas"></canvas>
+	<script src="Particle.js"></script>
+	<script src="variables.js"></script>
+    <script>
+        // Declare and initialize the canvas variables
+		var canvas = document.getElementById("myCanvas");
+		var ctx = canvas.getContext("2d");
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerHeight;
+		
+		// Variables for finding FPS
+		const times = [];
+		let fps;
+		let inv = false;
+
+        // Variables for particles
+        let arr = []
+        for(let i = 0; i < numParticles; i++)
+            arr.push(new Particle(Math.floor(Math.random()*window.innerWidth), Math.floor(Math.random()*window.innerHeight),
+            (Math.random()-.5), (Math.random()-.5), ax, ay, maxSpeed));
+
+        // Helper functions
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1) + min);
+        }
+
+        function distance(n, a){
+            return Math.sqrt((n.x-a.x)*(n.x-a.x) + (n.y-a.y)*(n.y-a.y));
+        }
+
+        /* 
+		* The update function - called every frame using requestAnimationFrame and updates
+		* individual parts of the game
+		*/
+        function update() {
+			draw();
+			for(n of arr){
+                n.update();
+            }
+			requestAnimationFrame(update);
+		}
+
+        /*
+		* Draw on the canvas and call the render functions of other necessary parts
+		*/
+		function draw() {
+            ctx.fillStyle = "white";
+			ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+            drawLines();
+			displayFPS();
+			for(n of arr){
+                n.render();
+            }
+		}
+
+        /*
+        * Calculate and draw the lines and fill triangles between the lines
+        */
+        function drawLines(){
+            let starts = [];
+            let ends = [];
+            for(let i = 0; i < arr.length; i++){
+                for(let j = i+1; j < arr.length; j++){
+                    if(distance(arr[i], arr[j]) < range){
+                        ctx.strokeStyle = '#ff213b';
+                        for(let k = 0; k < arr.length; k++){
+                            if(k != i && k != j && distance(arr[k], arr[i]) < range && distance(arr[k], arr[j]) < range){
+                                ctx.beginPath();
+                                ctx.moveTo(arr[i].x, arr[i].y);
+                                ctx.lineTo(arr[j].x, arr[j].y);
+                                ctx.lineTo(arr[k].x, arr[k].y);
+                                ctx.lineTo(arr[i].x, arr[i].y);
+                                ctx.closePath();
+                                ctx.fillStyle = '#ff6678';
+                                ctx.fill();
+                                starts.push(arr[i]);
+                                starts.push(arr[j]);
+                                starts.push(arr[k]);
+                                ends.push(arr[j]);
+                                ends.push(arr[k]);
+                                ends.push(arr[i]);
+                            }
+                            else{
+                                starts.push(arr[i]);
+                                ends.push(arr[j]);
+                            }
+                        }
+                    }
+                }
+            }
+            for(let a = 0; a < starts.length; a++){
+                ctx.beginPath();
+                ctx.moveTo(starts[a].x, starts[a].y);
+                ctx.lineTo(ends[a].x, ends[a].y);
+                ctx.stroke();
+            }
+            
+
+        }
+
+        /*
+		* Display the FPS by adding a time stamp to the times array and removing any stamp
+		* longer than one second
+		*/
+		function displayFPS()
+		{
+			const now = performance.now();
+			while (times.length > 0 && times[0] <= now - 1000) {
+			  times.shift();
+			}
+			times.push(now);
+			fps = times.length;
+			ctx.font = Math.max(window.innerWidth, window.innerHeight)/45 + "px sans-serif";
+			ctx.textAlign = 'left';
+			ctx.fillStyle = 'green';
+			ctx.fillText("FPS: " + fps, window.innerWidth/20, window.innerHeight/20);
+		}
+    </script>
+
+</body>
+
